@@ -1,2 +1,26 @@
-# CS327-Assignment2
-Simple Chess Engine
+* Thomas McCoy - NET_ID: tmccoy1@iastate.edu
+* Jens Rasmussen - NET_ID: jensr@iastate.edu
+* Jason Guo - NET_ID: jtguo@iastate.edu
+
+# Assignment 2
+
+COM 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple Chess Engine.
+
+## Getting Started
+
+* Via Release: Download latest release and unzip twice.
+* Via Cloning: Clone via gitbash/github desktop.
+
+## Running the tests
+
+~Filler~
+
+## Authors
+
+* **Thomas McCoy** - *Code development* - [MythicAlchemist](https://github.com/MythicAlchemist) - NET_ID: tmccoy1@iastate.edu
+* **Jens Rasmussen** - *Code development* - [JensRas](https://github.com/JensRas) - NET_ID: jensr@iastate.edu
+* **Jason Guo** - *Code development* - [JasonGuo-ISU](https://github.com/JasonGuo-ISU) - NET_ID: jtguo@iastate.edu
+
+## Acknowledgments
+
+Special Thanks to Steven Marshall Sheets for his help in understanding github. - [Paper-SSheets](https://github.com/Paper-SSheets)
