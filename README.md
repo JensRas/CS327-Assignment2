@@ -2,9 +2,9 @@
 * Jens Rasmussen - NET_ID: jensr@iastate.edu
 * Jason Guo - NET_ID: jtguo@iastate.edu
 
-# Assignment 2
+# Assignment 2 
 
-COM 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple Chess Engine.
+COMS 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple Chess Engine.
 
 ## Getting Started
 
@@ -13,7 +13,7 @@ COM 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple C
 
 ## Running the tests
 
-~Filler~
+Simply compile the program using the Makefile and run using ./chess - Use gdb chess to debug using gdb. 
 
 ## Authors
 
@@ -24,3 +24,4 @@ COM 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple C
 ## Acknowledgments
 
 Special Thanks to Steven Marshall Sheets for his help in understanding github. - [Paper-SSheets](https://github.com/Paper-SSheets)
+Special Thanks to Jeremy Sheaffer for his help and instruction throughout this class.
