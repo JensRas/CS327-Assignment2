@@ -5,6 +5,7 @@
 #include "chessboard.h"
 #include "printer.h"
 #include "move.h"
+#include "io.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
     print_board(&cb);
 
     do {
-
+        io_move_cursor(&cb, 0);
     } while (getch() != 27);
 
     end_terminal();

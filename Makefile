@@ -9,7 +9,7 @@ CXXFLAGS = -Wall -Werror -ggdb -funroll-loops -DTERM=$(TERM)
 LDFLAGS = -lncurses
 
 BIN = chess
-OBJS = chess.o chessboard.o move.o printer.o \
+OBJS = chess.o chessboard.o move.o printer.o io.o \
 
 all: $(BIN) etags
 

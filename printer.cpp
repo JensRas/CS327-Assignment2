@@ -63,19 +63,3 @@ void print_board(chessboard *cb)
     mvprintw(17, 0, "    a   b   c   d   e   f   g   h  ");
     refresh();
 }
-
-void init_terminal()
-{
-    initscr();
-    raw();
-    noecho();
-    curs_set(0);
-    start_color();
-    init_pair(1, COLOR_RED, COLOR_BLACK);
-    init_pair(2, COLOR_WHITE, COLOR_WHITE);
-}
-
-void end_terminal()
-{
-    endwin();
-}

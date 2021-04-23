@@ -16,8 +16,8 @@
 class coordinates
 {
     public:
-        char file;
-        int rank;
+        char file; // col
+        int rank; // row
         bool takes;
         bool promotes;
 };
@@ -38,6 +38,10 @@ class chessboard
         chess_piece *piece_map[8][8] = {0};
         std::vector <coordinates> whites_notation;
         std::vector <coordinates> blacks_notation;
+        bool can_castle_white;
+        bool can_castle_black;
+        int white_pieces[6] = {0}; // p = 0, R = 1, N = 2, B = 3, Q = 4, K = 5.
+        int black_pieces[6] = {0}; // p = 0, R = 1, N = 2, B = 3, Q = 4, K = 5.
 };
 
 void cb_place_pieces(chessboard *cb);
