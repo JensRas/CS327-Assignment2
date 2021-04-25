@@ -18,8 +18,8 @@ int main(int argc, char *argv[])
     print_board(&cb);
 
     do {
-        io_move_cursor(&cb, 0);
-    } while (getch() != 27);
+        move_turn(&cb);
+    } while (!cb.end_game_flag);
 
     end_terminal();
     return 0;
