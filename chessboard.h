@@ -9,6 +9,7 @@
 #define rook        'R'
 #define queen       'Q'
 #define king        'K'
+#define empty       ' '
 
 #define black       0
 #define white       1
@@ -18,15 +19,13 @@ class coordinates
     public:
         char file; // col
         int rank; // row
-        bool takes;
-        bool promotes;
 };
 
 class chess_piece
 {
     public:
-    chess_piece(bool color, char type) {this->color = color, this->type = type;}
-    ~chess_piece();
+        chess_piece(bool color, char type) {this->color = color, this->type = type;}
+        //~chess_piece();
         bool color;
         char type;
         coordinates coord;
@@ -48,7 +47,8 @@ class chessboard
         bool end_game_flag = false;
         chess_piece *selected_piece = 0;
         int num_taken = 0;
-        
+        bool placing = false;
+        bool whose_turn = white; // true == white, false == black
 };
 
 void cb_place_pieces(chessboard *cb);

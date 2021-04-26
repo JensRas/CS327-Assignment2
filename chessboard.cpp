@@ -11,9 +11,9 @@ void cb_place_pieces(chessboard *cb)
     chess_piece *p;
 
     // White pieces
-    for (y = 0; y < 2; y++) {
+    for (y = 6; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            if (y == 1) {
+            if (y == 6) {
                 type = pawn;
                 rank = 2;
             } else if(x == 0 || x == 7) {
@@ -42,9 +42,9 @@ void cb_place_pieces(chessboard *cb)
     }
 
     //Black pieces
-    for (y = 6; y < 8; y++) {
+    for (y = 0; y < 2; y++) {
         for (x = 0; x < 8; x++) {
-            if (y == 6) {
+            if (y == 1) {
                 type = pawn;
                 rank = 7;
             } else if(x == 0 || x == 7) {
@@ -69,6 +69,19 @@ void cb_place_pieces(chessboard *cb)
             cb->piece_map[y][x] = p;
             cb->piece_map[y][x]->coord.file = file;
             cb->piece_map[y][x]->coord.rank = rank;
+        }
+    }
+
+    // Assigning empty squares 'empty' pieces
+    for (y = 2; y < 6; y++) {
+        for (x = 0; x < 8; x++) {
+            color = white;
+            type = empty;
+            
+            p = new chess_piece(color, type);
+            cb->piece_map[y][x] = p;
+            cb->piece_map[y][x]->coord.file = x + 97;
+            cb->piece_map[y][x]->coord.rank = 8 - y;
         }
     }
 }

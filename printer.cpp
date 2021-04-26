@@ -27,9 +27,9 @@ void print_board(chessboard *cb)
     int y, x;
     int sum = 8;
 
-    mvprintw(0, 0, "MAKE YOUR MOVE!");
+    //mvprintw(0, 0, "MAKE YOUR MOVE!");
 
-    for (y = 2; y < 19; y++) {
+    for (y = 2; y < 18; y++) {
         if (y % 2 == 0) {
             mvprintw(y - 1, 0, "  ---------------------------------");
         }
@@ -37,15 +37,14 @@ void print_board(chessboard *cb)
             if (x == 2 && y % 2 == 1) {
                 mvprintw(y - 1, 0, "%d", sum--);
             }
-            if (x % 4 == 2) {
+            if (x % 4 == 2 && y % 2 == 0) {
                 mvprintw(y, x, "|");
-            } else { // x = 5, 9, 13, 17, 21, 25, 29, 33       // y = 2, 4, 6, 8, 10, 12, 14, 16
-                // Initial print of pieces
-                if ((x == 5 || x == 9 || x == 13 || x == 17 || x == 21 || x == 25 || x == 29 || x == 33) && y % 2 == 0 && cb->piece_map[(y - 1) / 2][(x - 4) / 4] != 0) {
-                    if(cb->piece_map[(y - 1) / 2][(x - 4) / 4]->color)
+            } else { // x = 5, 9, 13, 17, 21, 25, 29, 33       // y = 3, 5, 7, 9, 11, 13, 15, 17
+                if ((x == 5 || x == 9 || x == 13 || x == 17 || x == 21 || x == 25 || x == 29 || x == 33) && y % 2 == 0) {
+                    if(!cb->piece_map[(y - 2) / 2][(x - 4) / 4]->color)
                         attron(COLOR_PAIR(1));
-                    mvprintw(y, x - 1, "%c", cb->piece_map[(y - 1) / 2][(x - 4) / 4]->type);
-                    if(cb->piece_map[(y - 1) / 2][(x - 4) / 4]->color)
+                    mvprintw(y, x - 1, "%c", cb->piece_map[(y - 2) / 2][(x - 4) / 4]->type);
+                    if(!cb->piece_map[(y - 2) / 2][(x - 4) / 4]->color)
                         attroff(COLOR_PAIR(1));
                     refresh();
                 } else {
@@ -59,7 +58,7 @@ void print_board(chessboard *cb)
             }
         }
     }
-    
+    mvprintw(17, 0, "  ---------------------------------");
     mvprintw(18, 0, "    a   b   c   d   e   f   g   h  ");
     refresh();
 }
