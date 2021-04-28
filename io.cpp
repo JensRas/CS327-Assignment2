@@ -123,7 +123,6 @@ void io_move_cursor(chessboard *cb, int is_selected, int y, int x)
                 if(is_selected) {
                     if (move_check_piece(cb)) {
                         cb->placing = true;
-                        //print_board(cb);
                         break;
                     }
                     else 
@@ -156,7 +155,7 @@ void init_terminal()
     initscr();
     raw();
     noecho();
-    curs_set(0);
+    curs_set(1);
     start_color();
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_WHITE, COLOR_WHITE);

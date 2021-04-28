@@ -20,6 +20,7 @@ int move_check_knight (chessboard *cb, coordinates prev, coordinates next, bool 
 int move_check_bishop (chessboard *cb, coordinates prev, coordinates next, bool is_taking);
 int move_check_rook (chessboard *cb, coordinates prev, coordinates next, bool is_taking);
 int move_check_queen (chessboard *cb, coordinates prev, coordinates next, bool is_taking);
-int move_check_king (chessboard *cb, coordinates prev, coordinates next, bool color, bool is_taking);
+int move_check_king (chessboard *cb, coordinates prev, coordinates next, bool color, bool is_taking, bool is_moving);
+int isCheckmate(chessboard *cb, bool colorP);
 
 #endif

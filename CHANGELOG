@@ -3,3 +3,4 @@ Assignment 2
 4/22/2021 7:30 PM JCR JTG TOM: Worked more on piece movement, set up moving the cursor and the base of selecting a piece.
 4/24/2021 7:30 PM JCR JTG TOM: Worked more on piece movement and selection. Fixed some bugs, worked on checking for checks, and "forced moves".
 4/25/2021 8:00 PM JCR TOM: Fixed errors with piece_map array math, fixed placing, fixed move_check functions for all pieces except king, updated print_board.
+4/28/2021 8:00 PM JCR JTG TOM: Worked on checkmate checking.

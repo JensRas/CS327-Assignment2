@@ -1,34 +1,42 @@
 #include <curses.h>
 #include <vector>
 #include <cstdlib>
+#include <math.h>
 
 #include "move.h"
 #include "chessboard.h"
 #include "io.h"
+#include "printer.h"
 
 void move_turn (chessboard *cb)
 {
     do {
         //white's turn
+        print_board(cb);
         mvprintw(0, 0, "         WHITE'S TURN TO MOVE            ");
         refresh();
 
         cb->whose_turn = white;
         io_move_cursor(cb, 0, 8, 16);
-        if(cb->end_game_flag)
+        if(cb->end_game_flag || isCheckmate(cb, black) == 8) {
+            cb->end_game_flag = true;
             return;
+        }
         mvprintw(0, 0, "                                         ");
         refresh();
         cb->placing = false;
         cb->selected_piece = 0;
         //black's turn
+        print_board(cb);
         mvprintw(0, 0, "         BLACK'S TURN TO MOVE            ");
         refresh();
 
         cb->whose_turn = black;
         io_move_cursor(cb, 0, 8, 16);
-        if(cb->end_game_flag)
+        if(cb->end_game_flag || isCheckmate(cb, white) == 8){
+            cb->end_game_flag = true;
             return;
+        }
         refresh();
         cb->placing = false;
         cb->selected_piece = 0;
@@ -108,6 +116,7 @@ int move_check_piece(chessboard *cb)
                 move_piece(cb, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, is_taking);
                 return 1;
             }
+            break;
         case queen:
             if (move_check_queen(cb, cb->selected_piece->coord, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, is_taking)) {
                 if (is_taking)
@@ -117,7 +126,7 @@ int move_check_piece(chessboard *cb)
             }
             break;
         case king:
-            if (move_check_king(cb, cb->selected_piece->coord, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, color, is_taking)) {
+            if (move_check_king(cb, cb->selected_piece->coord, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, color, is_taking, 1)) {
                 if (is_taking)
                     cb->num_taken++;
                 move_piece(cb, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, is_taking);
@@ -305,12 +314,21 @@ int move_check_queen (chessboard *cb, coordinates prev, coordinates next, bool i
         return (move_check_bishop(cb, prev, next, is_taking));
 }
 
-int move_check_king (chessboard *cb, coordinates prev, coordinates next, bool color, bool is_taking) 
+int move_check_king (chessboard *cb, coordinates prev, coordinates next, bool color, bool is_taking, bool is_moving) 
 {
     int y, x;
-
-    if(((nr_pr == 1 || pr_nr == 1) && (nf_pf <= 1 || pf_nf <= 1)) || ((nf_pf == 1 || pf_nf == 1) && (pr_nr <= 1 || nr_pr <= 1))) {
-        if (color) {//checks for if moving into check
+    //nr_pr > 0 up
+    //pr_nr > 0 down
+    //nf_pf > 0 right
+    //pf_nf > 0 left
+    // if ((up or down) and (possibly right or possibly left)) or ((right or left) and (possibly up or possibly down))
+    if (cb->piece_map[8 - nr][nf - 97]->type != empty && !is_taking ) {
+        return 0;
+    }
+        // up, down, right, left, down left, up left, down right, up right
+    if ( (nr_pr == 1 && nf_pf == 0) || (pr_nr == 1 && nf_pf == 0) || (nf_pf == 1 && pr_nr == 0) || (pf_nf == 1 && pr_nr == 0) || 
+         (pf_nf == 1 && pr_nr == 1) || (pf_nf == 1 && nr_pr == 1) || (nf_pf == 1 && pr_nr == 1) || (nf_pf == 1 && nr_pr == 1)) {
+        if (color && is_moving) {//checks for if moving into check
             for (y = 0; y < 8; y++) {
                 for (x = 0; x < 8; x++) {
                     if (cb->piece_map[y][x]->type != empty) {
@@ -331,13 +349,13 @@ int move_check_king (chessboard *cb, coordinates prev, coordinates next, bool co
                                 if (move_check_queen(cb, cb->piece_map[y][x]->coord, next, 1))
                                     return 0;
                             if (cb->piece_map[y][x]->type == 'K')
-                                if (move_check_king(cb, cb->piece_map[y][x]->coord, next, 0, 1))
+                                if (move_check_king(cb, cb->piece_map[y][x]->coord, next, 0, 1, 0))
                                     return 0;
                         }
                     }
                 }
             }
-        } else {
+        } else if (is_moving) {
             for (y = 0; y < 8; y++) {
                 for (x = 0; x < 8; x++) {
                     if (cb->piece_map[y][x]->type != empty) {
@@ -358,7 +376,7 @@ int move_check_king (chessboard *cb, coordinates prev, coordinates next, bool co
                                 if (move_check_queen(cb, cb->piece_map[y][x]->coord, next, 1))
                                     return 0;
                             if (cb->piece_map[y][x]->type == 'K')
-                                if (move_check_king(cb, cb->piece_map[y][x]->coord, next, 1, 1))
+                                if (move_check_king(cb, cb->piece_map[y][x]->coord, next, 1, 1, 0))
                                     return 0;
                         }
                     }
@@ -416,21 +434,24 @@ void count_tot_pieces(chessboard *cb)
 
 
 int isCheckmate(chessboard *cb, bool colorP){// pass in color of the king 
-    int i, j;
+    int i, j, k;
     int y, x;
     int state = 0;
-    std::vector<coordinates> tryTake;
-    std::vector<coordinates> tryBlock;
+    std::vector<coordinates> tryToTake;
+    std::vector<coordinates> tryToBlock;
     std::vector<coordinates> availTakers;
     std::vector<coordinates> availBlockers;
+    std::vector<coordinates> LOS; // line of sight
+    std::vector<std::vector<coordinates>> availMoves;
     // 0 is king can move
     // 1 is in check can move
     // 2 is in check cant move
     // 3 is in check cant move can take
     // 4 is in check cant move can block
-    // 5 is in check cant move cant take can block
+    // 5 is in check cant move can take & block
     // 6 is in check cant move cant block can take
-    // 7 is checkmate
+    // 7 is in check cant move cant take can block
+    // 8 is checkmate
 
     for(i = 0; i < 8; i++){
         for(j = 0; j < 8; j++){
@@ -448,36 +469,36 @@ int isCheckmate(chessboard *cb, bool colorP){// pass in color of the king
             if(cb->piece_map[i][j]->color != colorP){
                if(cb->piece_map[i][j]->type == 'p'){
                     if(move_check_pawn(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, !colorP, true) == true){
-                        tryBlock.push_back(cb->piece_map[i][j]->coord);
-                        tryTake.push_back(cb->piece_map[i][j]->coord);
+                        tryToBlock.push_back(cb->piece_map[i][j]->coord); // adds pieces that put king in check
+                        tryToTake.push_back(cb->piece_map[i][j]->coord);
                         state = 1;
                     }
                 }
                 if(cb->piece_map[i][j]->type == 'R'){
                     if(move_check_rook(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
-                        tryBlock.push_back(cb->piece_map[i][j]->coord);
-                        tryTake.push_back(cb->piece_map[i][j]->coord);
+                        tryToBlock.push_back(cb->piece_map[i][j]->coord);
+                        tryToTake.push_back(cb->piece_map[i][j]->coord);
                         state = 1;
                     }
                 }
                 if(cb->piece_map[i][j]->type == 'N'){
                     if(move_check_knight(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
-                        tryBlock.push_back(cb->piece_map[i][j]->coord);
-                        tryTake.push_back(cb->piece_map[i][j]->coord);
+                        tryToBlock.push_back(cb->piece_map[i][j]->coord);
+                        tryToTake.push_back(cb->piece_map[i][j]->coord);
                         state = 1;
                     }
                 }
                 if(cb->piece_map[i][j]->type == 'B'){
                     if(move_check_bishop(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
-                        tryBlock.push_back(cb->piece_map[i][j]->coord);
-                        tryTake.push_back(cb->piece_map[i][j]->coord);
+                        tryToBlock.push_back(cb->piece_map[i][j]->coord);
+                        tryToTake.push_back(cb->piece_map[i][j]->coord);
                         state = 1;
                     }
                 }
                 if(cb->piece_map[i][j]->type == 'Q'){
                     if(move_check_queen(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
-                        tryBlock.push_back(cb->piece_map[i][j]->coord);
-                        tryTake.push_back(cb->piece_map[i][j]->coord);
+                        tryToBlock.push_back(cb->piece_map[i][j]->coord);
+                        tryToTake.push_back(cb->piece_map[i][j]->coord);
                         state = 1;
                     }
                 }
@@ -490,7 +511,8 @@ int isCheckmate(chessboard *cb, bool colorP){// pass in color of the king
             for(j = -1; j < 3; j++){
                 if(j != 0 && i != 0){
                     if(0 < i + y && i + y < 8 && 0 < j + x && j + x < 8){
-                        if(move_check_king(cb, cb->piece_map[y][x]->coord, cb->piece_map[y + i][x + j]->coord, colorP, true) == false && move_check_king(cb, cb->piece_map[y][x]->coord, cb->piece_map[y + i][x + j]->coord, colorP, false) == false){
+                        if(move_check_king(cb, cb->piece_map[y][x]->coord, cb->piece_map[y + i][x + j]->coord, colorP, true, true) == false && 
+                           move_check_king(cb, cb->piece_map[y][x]->coord, cb->piece_map[y + i][x + j]->coord, colorP, false, true) == false){
                             state = 2;
                         }
                     }
@@ -499,48 +521,169 @@ int isCheckmate(chessboard *cb, bool colorP){// pass in color of the king
         }
     }
 
-    if(state == 2 && tryTake.size() == 1){//try to take
+    if(state == 2 && (int)tryToTake.size() == 1){//try to take
         for(i = 0; i < 8; i++){
-            for(j = 0; j < 8; i++){
-                if(cb->piece_map[i][j]->color != colorP){
+            for(j = 0; j < 8; j++){
+                if(cb->piece_map[i][j]->color == colorP){
                     if(cb->piece_map[i][j]->type == 'p'){
-                        if(move_check_pawn(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, !colorP, true) == true){
+                        if(move_check_pawn(cb, cb->piece_map[i][j]->coord, tryToTake[0], colorP, true) == true){
                             availTakers.push_back(cb->piece_map[i][j]->coord);
                         }
                     }
                     if(cb->piece_map[i][j]->type == 'R'){
-                        if(move_check_rook(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
+                        if(move_check_rook(cb, cb->piece_map[i][j]->coord, tryToTake[0], true) == true){
                             availTakers.push_back(cb->piece_map[i][j]->coord);
                         }
                     }
                     if(cb->piece_map[i][j]->type == 'N'){
-                        if(move_check_knight(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
+                        if(move_check_knight(cb, cb->piece_map[i][j]->coord, tryToTake[0], true) == true){
                             availTakers.push_back(cb->piece_map[i][j]->coord);
                         }
                     }
                     if(cb->piece_map[i][j]->type == 'B'){
-                        if(move_check_bishop(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
+                        if(move_check_bishop(cb, cb->piece_map[i][j]->coord, tryToTake[0], true) == true){
                             availTakers.push_back(cb->piece_map[i][j]->coord);
                         }
                     }
                     if(cb->piece_map[i][j]->type == 'Q'){
-                        if(move_check_queen(cb, cb->piece_map[i][j]->coord, cb->piece_map[y][x]->coord, true) == true){
+                        if(move_check_queen(cb, cb->piece_map[i][j]->coord, tryToTake[0], true) == true){
                             availTakers.push_back(cb->piece_map[i][j]->coord);
                         }
                     }
                 }
             }
         }
-        if(availTakers.size() > 0){
-            tryTake.pop_back();
+
+        if((int)tryToTake.size() == 1){
+            tryToTake.pop_back();
         }
     }
 
-    if(state == 2 && tryBlock.size() == 1){
+    if(state == 2 && (int)tryToBlock.size() == 1){//checks for line of sight spaces between taker and king
+        for(i = 0; i < 8; i++){
+            for(j = 0; j < 8; j++){
+                if(cb->piece_map[8 - tryToBlock[0].rank][tryToBlock[0].file - 97]->type == 'B'){
+                    if (move_check_bishop(cb, tryToBlock[0], cb->piece_map[i][j]->coord, true)) {
+                            if((8 - tryToBlock[0].rank - y)/abs(8 - tryToBlock[0].rank - y) == (8 - tryToBlock[0].rank - i)/abs(8 - tryToBlock[0].rank - i) 
+                            && (tryToBlock[0].file - x - 97)/abs(tryToBlock[0].file - x - 97) == (tryToBlock[0].file - j - 97)/abs(tryToBlock[0].file - j - 97)){
+                                if(sqrt(pow(8 - tryToBlock[0].rank - y, 2) + pow(tryToBlock[0].file - x - 97, 2)) > sqrt(pow(8 - tryToBlock[0].rank - i, 2) + pow(tryToBlock[0].file - j - 97, 2))){
+                                    LOS.push_back(cb->piece_map[i][j]->coord);
+                                }
+                            }
+                        }
+                }
+                if(cb->piece_map[8 - tryToBlock[0].rank][tryToBlock[0].file - 97]->type == 'R'){
+                    if (move_check_rook(cb, tryToBlock[0], cb->piece_map[i][j]->coord, true)) {
+                            if((8 - tryToBlock[0].rank - y)/abs(8 - tryToBlock[0].rank - y) == (8 - tryToBlock[0].rank - i)/abs(8 - tryToBlock[0].rank - i) 
+                            && (tryToBlock[0].file - x - 97)/abs(tryToBlock[0].file - x - 97) == (tryToBlock[0].file - j - 97)/abs(tryToBlock[0].file - j - 97)){
+                                if(sqrt(pow(8 - tryToBlock[0].rank - y, 2) + pow(tryToBlock[0].file - x - 97, 2)) > sqrt(pow(8 - tryToBlock[0].rank - i, 2) + pow(tryToBlock[0].file - j - 97, 2))){
+                                    LOS.push_back(cb->piece_map[i][j]->coord);
+                                }
+                            }
+                        }
+                }
+                if(cb->piece_map[8 - tryToBlock[0].rank][tryToBlock[0].file - 97]->type == 'Q'){
+                    if(move_check_bishop(cb, tryToBlock[0], cb->piece_map[y][x]->coord, true)){
+                        if (move_check_bishop(cb, tryToBlock[0], cb->piece_map[i][j]->coord, true)) {
+                            if((8 - tryToBlock[0].rank - y)/abs(8 - tryToBlock[0].rank - y) == (8 - tryToBlock[0].rank - i)/abs(8 - tryToBlock[0].rank - i) 
+                            && (tryToBlock[0].file - x - 97)/abs(tryToBlock[0].file - x - 97) == (tryToBlock[0].file - j - 97)/abs(tryToBlock[0].file - j - 97)){
+                                if(sqrt(pow(8 - tryToBlock[0].rank - y, 2) + pow(tryToBlock[0].file - x - 97, 2)) > sqrt(pow(8 - tryToBlock[0].rank - i, 2) + pow(tryToBlock[0].file - j - 97, 2))){
+                                    LOS.push_back(cb->piece_map[i][j]->coord);
+                                }
+                            }
+                        }
+                    }else if(move_check_rook(cb, tryToBlock[0], cb->piece_map[y][x]->coord, true)){
+                        if (move_check_rook(cb, tryToBlock[0], cb->piece_map[i][j]->coord, true)) {
+                            if((8 - tryToBlock[0].rank - y)/abs(8 - tryToBlock[0].rank - y) == (8 - tryToBlock[0].rank - i)/abs(8 - tryToBlock[0].rank - i) 
+                            && (tryToBlock[0].file - x - 97)/abs(tryToBlock[0].file - x - 97) == (tryToBlock[0].file - j - 97)/abs(tryToBlock[0].file - j - 97)){
+                                if(sqrt(pow(8 - tryToBlock[0].rank - y, 2) + pow(tryToBlock[0].file - x - 97, 2)) > sqrt(pow(8 - tryToBlock[0].rank - i, 2) + pow(tryToBlock[0].file - j - 97, 2))){
+                                    LOS.push_back(cb->piece_map[i][j]->coord);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
+        if((int)tryToBlock.size() == 1){
+            tryToBlock.pop_back();
+        }
     }
 
+    if(state == 2){
+        
+        for(i = 0; i < (int)LOS.size(); i++){
+            availMoves.push_back(std::vector<coordinates>());
+            availMoves[i].push_back(LOS[i]);
+        }
+        
+        for(i = 0; i < (int)availMoves.size(); i++) {//checks for pieces to move into line of sight between piece checking king and king
+            for(j = 0; j < 8; j++){
+                for(k = 0; k < 8; k++){
+                    if(cb->piece_map[j][k]->color == colorP){
+                        if(cb->piece_map[j][k]->type == 'p'){
+                            if(move_check_pawn(cb, cb->piece_map[j][k]->coord, availMoves[i][0], colorP, false)){
+                                availMoves[i].push_back(cb->piece_map[j][k]->coord);
+                            }
+                        }
+                        if(cb->piece_map[j][k]->type == 'B'){
+                            if(move_check_bishop(cb, cb->piece_map[j][k]->coord, availMoves[i][0], false)){
+                                availMoves[i].push_back(cb->piece_map[j][k]->coord);
+                            }
+                        }
+                        if(cb->piece_map[j][k]->type == 'R'){
+                            if(move_check_rook(cb, cb->piece_map[j][k]->coord, availMoves[i][0], false)){
+                                availMoves[i].push_back(cb->piece_map[j][k]->coord);
+                            }
+                        }
+                        if(cb->piece_map[j][k]->type == 'N'){
+                            if(move_check_knight(cb, cb->piece_map[j][k]->coord, availMoves[i][0], false)){
+                                availMoves[i].push_back(cb->piece_map[j][k]->coord);
+                            }
+                        }
+                        if(cb->piece_map[j][k]->type == 'Q'){
+                            if(move_check_queen(cb, cb->piece_map[j][k]->coord, availMoves[i][0], false)){
+                                availMoves[i].push_back(cb->piece_map[j][k]->coord);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    int moves = 0;
+    for(i = 0; i < (int)availMoves.size(); i++){
+        for(j = 0; j < (int)availMoves[i].size(); j++){
+            if(j != 0){
+                moves++;
+            }
+        }
+    }
 
+    if((int)availTakers.size() != 0){
+        state = 3;
+    }
 
+    if(moves!= 0 && state == 3){
+        state = 4;
+    }
+
+    if(moves != 0 && state == 2){
+        state = 5;
+    }
+
+    if(moves == 0 && state == 3){
+        state = 6;
+    }
+
+    if((int)availTakers.size() == 0 && state == 4){
+        state = 7;
+    }
+
+    if((int)availTakers.size() == 0 && moves == 0 && state != 0){
+        state = 8;
+    }
+    
     return state;
 }
