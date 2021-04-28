@@ -38,13 +38,13 @@ class chessboard
         chess_piece *piece_graveyard[32] = {0};
         std::vector <coordinates> whites_notation;
         std::vector <coordinates> blacks_notation;
-        bool can_castle_white_long;
-        bool can_castle_white_short;
-        bool can_castle_black_long;
-        bool can_castle_black_short;
+        bool can_castle_white_long = 1;
+        bool can_castle_white_short = 1;
+        bool can_castle_black_long = 1;
+        bool can_castle_black_short = 1;
         int white_pieces[6] = {0}; // p = 0, R = 1, N = 2, B = 3, Q = 4, K = 5.
         int black_pieces[6] = {0}; // p = 0, R = 1, N = 2, B = 3, Q = 4, K = 5.
-        bool end_game_flag = false;
+        int end_game_flag = 0;
         chess_piece *selected_piece = 0;
         int num_taken = 0;
         bool placing = false;

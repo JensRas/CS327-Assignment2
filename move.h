@@ -14,7 +14,9 @@
 
 void move_turn (chessboard *cb);
 void move_piece(chessboard *cb, coordinates next, bool is_taking);
+void move_piece(chessboard *cb, coordinates prev, coordinates next);
 int move_check_piece(chessboard *cb);
+int move_castle (chessboard *cb, int version, int color);
 int move_check_pawn (chessboard *cb, coordinates prev, coordinates next, bool color, bool is_taking);
 int move_check_knight (chessboard *cb, coordinates prev, coordinates next, bool is_taking);
 int move_check_bishop (chessboard *cb, coordinates prev, coordinates next, bool is_taking);

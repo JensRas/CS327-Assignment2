@@ -18,31 +18,50 @@ void move_turn (chessboard *cb)
 
         cb->whose_turn = white;
         io_move_cursor(cb, 0, 8, 16);
-        if(cb->end_game_flag || isCheckmate(cb, black) == 8) {
-            cb->end_game_flag = true;
+        if (cb->end_game_flag == 3)
+            return;
+        if(cb->end_game_flag == 1 || isCheckmate(cb, black) == 8) {
+            cb->end_game_flag = 1; // white wins
             return;
         }
         mvprintw(0, 0, "                                         ");
         refresh();
+        if (cb->selected_piece->coord.rank == 1 && cb->selected_piece->coord.file == 'e') {
+            cb->can_castle_white_long = 0;
+            cb->can_castle_white_short = 0;
+        } else if (cb->selected_piece->coord.rank == 1 && cb->selected_piece->coord.file == 'a') {
+            cb->can_castle_white_long = 0;
+        } else if (cb->selected_piece->coord.rank == 1 && cb->selected_piece->coord.file == 'h') {
+            cb->can_castle_white_short = 0;
+        }
         cb->placing = false;
         cb->selected_piece = 0;
         //black's turn
         print_board(cb);
         mvprintw(0, 0, "         BLACK'S TURN TO MOVE            ");
         refresh();
-
         cb->whose_turn = black;
         io_move_cursor(cb, 0, 8, 16);
-        if(cb->end_game_flag || isCheckmate(cb, white) == 8){
-            cb->end_game_flag = true;
+        if (cb->end_game_flag == 3)
+            return;
+        if(cb->end_game_flag == 2 || isCheckmate(cb, white) == 8){
+            cb->end_game_flag = 2; // Black wins
             return;
         }
         refresh();
+        if (cb->selected_piece->coord.rank == 8 && cb->selected_piece->coord.file == 'e') {
+            cb->can_castle_black_long = 0;
+            cb->can_castle_black_short = 0;
+        } else if (cb->selected_piece->coord.rank == 8 && cb->selected_piece->coord.file == 'a') {
+            cb->can_castle_black_long = 0;
+        } else if (cb->selected_piece->coord.rank == 8 && cb->selected_piece->coord.file == 'h') {
+            cb->can_castle_black_short = 0;
+        }
         cb->placing = false;
         cb->selected_piece = 0;
 
     } while (getch() != 27);
-        cb->end_game_flag = true;
+        cb->end_game_flag = 3; // nobody wins
 }
 
 // Swapping and "deleting" old
@@ -62,6 +81,26 @@ void move_piece(chessboard *cb, coordinates next, bool is_taking)
     new_coords = cb->piece_map[8 - nr][nf - 97]->coord;
     // new location -- selected piece
     *cb->piece_map[8 - nr][nf - 97] = *cb->selected_piece;
+    // new location -- new coords
+    cb->piece_map[8 - nr][nf - 97]->coord = new_coords;
+    // old location -- swapped piece (hopefully empty)
+    *cb->piece_map[8 - old_coords.rank][old_coords.file - 97] = tmp;
+    // old location -- old coords
+    cb->piece_map[8 - old_coords.rank][old_coords.file - 97]->coord = old_coords;
+}
+
+// Swapping and deleting old (for castling - rook and king)
+void move_piece(chessboard *cb, coordinates prev, coordinates next)
+{
+    chess_piece tmp(empty, 1);
+    coordinates old_coords, new_coords;
+    
+    tmp = *cb->piece_map[8 - nr][nf - 97];
+    // new coords
+    old_coords = prev;
+    new_coords = cb->piece_map[8 - nr][nf - 97]->coord;
+    // new location -- selected piece
+    *cb->piece_map[8 - nr][nf - 97] = *cb->piece_map[8 - prev.rank][prev.file - 97];
     // new location -- new coords
     cb->piece_map[8 - nr][nf - 97]->coord = new_coords;
     // old location -- swapped piece (hopefully empty)
@@ -126,11 +165,75 @@ int move_check_piece(chessboard *cb)
             }
             break;
         case king:
+            if ((cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.file - cb->selected_piece->coord.file == 2 || 
+                 cb->selected_piece->coord.file - cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.file == 2) && 
+                 cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.rank - cb->selected_piece->coord.rank == 0) {
+                if (color && cb->can_castle_white_long && cb->selected_piece->coord.file - cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.file == 2) {
+                    if (move_castle(cb, 0, white)) // chessboard - castle version - color
+                        return 1;
+                } else if (color && cb->can_castle_white_short && cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.file - cb->selected_piece->coord.file == 2) {
+                    if (move_castle(cb, 1, white)) // chessboard - castle version - color
+                        return 1;
+                } else if (cb->can_castle_black_long && cb->selected_piece->coord.file - cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.file == 2) {
+                    if (move_castle(cb, 2, black)) // chessboard - castle version - color
+                        return 1;
+                } else if (cb->can_castle_black_short && cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord.file - cb->selected_piece->coord.file == 2) {
+                    if (move_castle(cb, 3, black)) // chessboard - castle version - color
+                        return 1;
+                }
+            }
             if (move_check_king(cb, cb->selected_piece->coord, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, color, is_taking, 1)) {
                 if (is_taking)
                     cb->num_taken++;
                 move_piece(cb, cb->piece_map[(y - 2) / 2][(x - 4) / 4]->coord, is_taking);
                 return 1;
+            }
+            break;
+    }
+    return 0;
+}
+
+int move_castle (chessboard *cb, int version, int color)
+{
+    switch (version) {
+        case 0: // white long
+            if (move_check_rook(cb, cb->piece_map[7][0]->coord, cb->piece_map[7][3]->coord, 0)) {
+                if (move_check_king(cb, cb->piece_map[7][4]->coord, cb->piece_map[7][3]->coord, white, 0, 1) && 
+                    move_check_king(cb, cb->piece_map[7][3]->coord, cb->piece_map[7][2]->coord, white, 0, 1)) {
+                    move_piece(cb, cb->piece_map[7][0]->coord, cb->piece_map[7][3]->coord); // Rook
+                    move_piece(cb, cb->piece_map[7][4]->coord, cb->piece_map[7][2]->coord); // King
+                    return 1;
+                }
+            }
+            break;
+        case 1: // white short
+            if (move_check_rook(cb, cb->piece_map[7][7]->coord, cb->piece_map[7][5]->coord, 0)) {
+                if (move_check_king(cb, cb->piece_map[7][4]->coord, cb->piece_map[7][5]->coord, white, 0, 1) && 
+                    move_check_king(cb, cb->piece_map[7][5]->coord, cb->piece_map[7][6]->coord, white, 0, 1)) {
+                    move_piece(cb, cb->piece_map[7][7]->coord, cb->piece_map[7][5]->coord); // Rook
+                    move_piece(cb, cb->piece_map[7][4]->coord, cb->piece_map[7][6]->coord); // King
+                    return 1;
+                }
+            }
+            break; 
+        case 2: // black long
+            if (move_check_rook(cb, cb->piece_map[0][0]->coord, cb->piece_map[0][3]->coord, 0)) {
+                if (move_check_king(cb, cb->piece_map[0][4]->coord, cb->piece_map[0][3]->coord, black, 0, 1) && 
+                    move_check_king(cb, cb->piece_map[0][3]->coord, cb->piece_map[0][2]->coord, black, 0, 1)) {
+                    move_piece(cb, cb->piece_map[0][0]->coord, cb->piece_map[0][3]->coord); // Rook a8
+                    move_piece(cb, cb->piece_map[0][4]->coord, cb->piece_map[0][2]->coord); // King
+                    return 1;
+                }
+            }
+            break;
+        case 3: // black short
+            if (move_check_rook(cb, cb->piece_map[0][7]->coord, cb->piece_map[0][5]->coord, 0)) {
+                if (move_check_king(cb, cb->piece_map[0][4]->coord, cb->piece_map[0][5]->coord, black, 0, 1) && 
+                    move_check_king(cb, cb->piece_map[0][5]->coord, cb->piece_map[0][6]->coord, black, 0, 1)) {
+                    move_piece(cb, cb->piece_map[0][7]->coord, cb->piece_map[0][5]->coord); // Rook h8
+                    move_piece(cb, cb->piece_map[0][4]->coord, cb->piece_map[0][6]->coord); // King
+                    return 1;
+                }
             }
             break;
     }
@@ -148,6 +251,12 @@ int move_check_pawn (chessboard *cb, coordinates prev, coordinates next, bool co
                 return 1;
             } else if (nr_pr == 1 && nf == pf && cb->piece_map[8 - nr][nf - 97]->type == empty) { // Move 1 forwards
                 return 1;
+            } else if (nr_pr == 1 && is_taking) {
+                if (nf > pf && nf_pf == 1) { // Take diag right
+                    return 1;
+                } else if (nf < pf && pf_nf == 1) { // Take diag left
+                    return 1;
+                }
             }
         } else if (nr_pr == 1 && nf == pf && cb->piece_map[8 - nr][nf - 97]->type == empty) { // Move 1 forwards
             return 1;
@@ -167,8 +276,23 @@ int move_check_pawn (chessboard *cb, coordinates prev, coordinates next, bool co
                 return 1;
             } else if (pr_nr == 1 && nf == pf && cb->piece_map[8 - nr][nf - 97]->type == empty) {
                 return 1;
+            } else if (pr_nr == 1 && is_taking) {
+                if (nf > pf && nf_pf == 1) { // Take diag right (perspective)
+                    return 1;
+                } else if (nf < pf && pf_nf == 1) { // Take diag left (perspective)
+                    return 1;
+                }
             }
         } else if (pr_nr == 1 && nf == pf && cb->piece_map[8 - nr][nf - 97]->type == empty) { // Move 1 forwards
+            if (nf > pf && nf_pf == 1) { // Take diag right (perspective)
+                return 1;
+            } else if (pr_nr == 1 && is_taking) {
+                if (nf > pf && nf_pf == 1) { // Take diag right (perspective)
+                    return 1;
+                } else if (nf < pf && pf_nf == 1) { // Take diag left (perspective)
+                    return 1;
+                }
+            }
             return 1;
         } else if (pr_nr == 1 && is_taking) {
             if (nf > pf && nf_pf == 1) { // Take diag right (perspective)

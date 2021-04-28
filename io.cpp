@@ -54,7 +54,11 @@ void io_move_cursor(chessboard *cb, int is_selected, int y, int x)
                 move(y - 2, x);
                 if (is_selected) {
                     mvaddch(sel_piece_y, sel_piece_x, ' ');
+                    if (!cb->selected_piece->color)
+                        attron(COLOR_PAIR(1));
                     mvaddch(y - 2, x, my_cursor);
+                    if (!cb->selected_piece->color)
+                        attroff(COLOR_PAIR(1));
                     move(y - 2, x);
                 }
                 refresh();
@@ -74,7 +78,11 @@ void io_move_cursor(chessboard *cb, int is_selected, int y, int x)
                 move(y, x + 4);
                 if (is_selected) {
                     mvaddch(sel_piece_y, sel_piece_x, ' ');
+                    if (!cb->selected_piece->color)
+                        attron(COLOR_PAIR(1));
                     mvaddch(y, x + 4, my_cursor);
+                     if (!cb->selected_piece->color)
+                        attroff(COLOR_PAIR(1));
                     move(y, x + 4);
                 }
                 refresh();
@@ -94,7 +102,11 @@ void io_move_cursor(chessboard *cb, int is_selected, int y, int x)
                 move(y + 2, x);
                 if (is_selected) {
                     mvaddch(sel_piece_y, sel_piece_x, ' ');
+                    if (!cb->selected_piece->color)
+                        attron(COLOR_PAIR(1));
                     mvaddch(y + 2, x, my_cursor);
+                     if (!cb->selected_piece->color)
+                        attroff(COLOR_PAIR(1));
                     move(y + 2, x);
                 }
                 refresh();
@@ -114,7 +126,11 @@ void io_move_cursor(chessboard *cb, int is_selected, int y, int x)
                 move(y, x - 4);
                 if (is_selected) {
                     mvaddch(sel_piece_y, sel_piece_x, ' ');
+                    if (!cb->selected_piece->color)
+                        attron(COLOR_PAIR(1));
                     mvaddch(y, x - 4, my_cursor);
+                     if (!cb->selected_piece->color)
+                        attroff(COLOR_PAIR(1));
                     move(y, x - 4);
                 }
                 refresh();
@@ -138,7 +154,7 @@ void io_move_cursor(chessboard *cb, int is_selected, int y, int x)
     refresh();
 
     if(key == 27 && !is_selected) {
-        cb->end_game_flag = true;
+        cb->end_game_flag = 3; // Nobody wins
     } else if (key == 27 && is_selected) {
         if(cb->piece_map[(y - 2) / 2][(x - 4) / 4]->type != empty)
             mvaddch(y, x, cb->piece_map[(y - 2)  / 2][(x - 4) / 4]->type);
