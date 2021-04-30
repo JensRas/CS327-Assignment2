@@ -13,7 +13,8 @@ COMS 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple 
 
 ## Running the tests
 
-Simply compile the program using the Makefile and run using ./chess - Use gdb chess to debug using gdb. 
+Simply compile the program using the Makefile (make) and run using ./chess - Use gdb chess to debug using gdb. 
+To play, use W, A, S, D to move the cursor and Enter to select and place pieces.
 
 ## Authors
 
