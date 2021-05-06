@@ -11,9 +11,10 @@ COMS 327 - Advanced Programming @ Iowa State University - Assignment 2 - Simple 
 * Via Release: Download latest release and unzip twice.
 * Via Cloning: Clone via gitbash/github desktop.
 
-## Running the tests
+## Playing
 
-Simply compile the program using the Makefile (make) and run using ./chess - Use gdb chess to debug using gdb. 
+Simply compile the program using the Makefile (make) and run using ./chess 
+- Use gdb chess to debug using gdb. 
 To play, use W, A, S, D to move the cursor and Enter to select and place pieces.
 
 ## Authors
